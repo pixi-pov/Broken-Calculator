@@ -30,18 +30,5 @@ Plays a sound (`sound.mp3`) when it gives up.
 - “Thinking…” dot animation  
 - Shake effect on failure  
 
----
 
-## 🚀 Demo  
-Just open the `index.html` file in your browser.  
-No dependencies. No setup. No drama (except from the calculator).
-
----
-
-## 🖼 Screenshots  
-(Add your own screenshots here)
-
----
-
-## 📂 Project Structure
 
