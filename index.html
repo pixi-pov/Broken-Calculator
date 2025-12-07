@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+
+  <!-- THE MOST IMPORTANT LINE -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>Broken Calculator</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #e0f2fe 0, #f4f4f5 40%, #e5e7eb 100%);
+      padding: 20px;
+    }
+
+    /* 🔥 MAIN RESPONSIVE SIZE */
+    .calc {
+      width: 100%;
+      max-width: 420px;   /* Bigger on phone */
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .screen {
+      background: rgba(248, 250, 252, 0.85);
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 95px;
+      border: 1px solid rgba(226, 232, 240, 0.9);
+    }
+
+    .expression {
+      font-size: clamp(16px, 4vw, 20px);
+      text-align: right;
+      opacity: 0.6;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .result {
+      font-size: clamp(22px, 6vw, 30px);
+      text-align: right;
+      font-weight: 600;
+      min-height: 28px;
+    }
+
+    .thinking {
+      font-size: clamp(12px, 3vw, 14px);
+      text-align: right;
+      opacity: 0;
+      height: 16px;
+      transition: opacity 0.2s ease;
+    }
+
+    .thinking.show {
+      opacity: 0.8;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: clamp(14px, 4vw, 18px) 0;
+      font-size: clamp(18px, 4vw, 22px);
+      background: #f3f4f6;
+      cursor: pointer;
+      transition: 0.15s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    button:hover {
+      background: #e5e7eb;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    button:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    button.operator {
+      background: #e5e7eb;
+      font-weight: 500;
+    }
+
+    button.equal {
+      grid-column: span 2;
+      background: #111827;
+      color: white;
+      font-weight: 600;
+    }
+
+    .clear {
+      background: #fee2e2;
+    }
+
+    .footer {
+      font-size: clamp(10px, 2.8vw, 12px);
+      text-align: right;
+      opacity: 0.6;
+    }
+
+    /* OPTIONAL EXTRA BOOST FOR SMALL PHONES */
+    @media (max-width: 380px) {
+      .calc {
+        transform: scale(1.08); /* Increase size */
+      }
+    }
+
+    @media (max-width: 330px) {
+      .calc {
+        transform: scale(1.18);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="calc">
+    <div class="screen">
+      <div id="expression" class="expression">0</div>
+      <div id="result" class="result">0</div>
+      <div id="thinking" class="thinking"></div>
+    </div>
+
+    <div class="buttons">
+      <button class="clear" data-action="clear">AC</button>
+      <button data-action="back">DEL</button>
+      <button class="operator" data-value="%">%</button>
+      <button class="operator" data-value="/">÷</button>
+
+      <button data-value="7">7</button>
+      <button data-value="8">8</button>
+      <button data-value="9">9</button>
+      <button class="operator" data-value="*">×</button>
+
+      <button data-value="4">4</button>
+      <button data-value="5">5</button>
+      <button data-value="6">6</button>
+      <button class="operator" data-value="-">−</button>
+
+      <button data-value="1">1</button>
+      <button data-value="2">2</button>
+      <button data-value="3">3</button>
+      <button class="operator" data-value="+">+</button>
+
+      <button data-value="0">0</button>
+      <button data-value=".">.</button>
+      <button class="equal" data-action="equal">=</button>
+    </div>
+
+    <div class="footer">What you looking at? 😭</div>
+  </div>
+
+  <audio id="fail-sound" src="sound.mp3"></audio>
+
+  <script>
+    const expressionEl = document.getElementById("expression");
+    const resultEl = document.getElementById("result");
+    const thinkingEl = document.getElementById("thinking");
+    const soundFail = document.getElementById("fail-sound");
+    const buttons = document.querySelectorAll("button");
+
+    let expression = "";
+    let isThinking = false;
+    let dotsTimer = null;
+
+    function updateExpression() {
+      expressionEl.textContent = expression || "0";
+    }
+
+    function appendValue(v) {
+      if (isThinking) return;
+      expression += v;
+      updateExpression();
+      resultEl.textContent = "0";
+      thinkingEl.classList.remove("show");
+    }
+
+    function clearAll() {
+      if (isThinking) return;
+      expression = "";
+      updateExpression();
+      resultEl.textContent = "0";
+    }
+
+    function backspace() {
+      if (isThinking) return;
+      expression = expression.slice(0, -1);
+      updateExpression();
+    }
+
+    function startDots() {
+      let count = 0;
+      dotsTimer = setInterval(() => {
+        thinkingEl.textContent = "thinking" + ".".repeat(count % 4);
+        count++;
+      }, 350);
+    }
+
+    function stopDots() {
+      clearInterval(dotsTimer);
+      dotsTimer = null;
+    }
+
+    function fakeCalculate() {
+      if (isThinking) return;
+      if (!expression.trim()) return;
+
+      isThinking = true;
+      resultEl.textContent = "";
+      thinkingEl.classList.add("show");
+      startDots();
+
+      setTimeout(() => {
+        stopDots();
+        thinkingEl.classList.remove("show");
+
+        resultEl.textContent = "idk bro just leave me alone 😭";
+        soundFail.currentTime = 0;
+        soundFail.play();
+
+        isThinking = false;
+      }, 1400);
+    }
+
+    buttons.forEach(btn => {
+      const val = btn.getAttribute("data-value");
+      const action = btn.getAttribute("data-action");
+
+      btn.addEventListener("click", () => {
+        if (val !== null) appendValue(val);
+        if (action === "clear") clearAll();
+        if (action === "back") backspace();
+        if (action === "equal") fakeCalculate();
+      });
+    });
+  </script>
+</body>
+</html>
